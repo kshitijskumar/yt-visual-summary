@@ -13,10 +13,21 @@ Scripts live in `scripts/` next to this file. Refer to that directory as `$SKILL
 Run `bash $SKILL/scripts/fetch.sh "<URL>"`.
 - It prints `WORK=<dir>` containing `transcript.txt` (`[mm:ss] text` paragraphs) and `meta.json` (id, title, channel, duration, upload date, chapters, description).
 - Exit 2 (`NO_CAPTIONS`): tell the user the video has no captions and stop.
-- Exit 1: show the error it printed and stop. If it says yt-dlp is missing, give the install command it printed.
+- Exit 1: if yt-dlp is missing, give the install command it printed and stop. For any other download error (429 rate limit, cookie/DPAPI failure, etc.), don't stop: use the in-app browser fallback below.
+
+### Fallback: in-app browser (when fetch.sh exits 1 with a download error)
+Use the built-in browser (`mcp__Claude_Browser__*`; load the `anthropic-skills:built-in-browser` skill first if needed).
+1. `navigate` to the video URL.
+2. With `javascript_tool`, read `window.ytInitialPlayerResponse` for title (`videoDetails.title`), channel (`author`), duration (`lengthSeconds`), id, description (`shortDescription`), upload date (`microformat.playerMicroformatRenderer.publishDate`), and whether `captions...captionTracks` has an English track. No tracks: tell the user there are no captions and stop. Chapters: `window.ytInitialData.playerOverlays.playerOverlayRenderer.decoratedPlayerBarRenderer.decoratedPlayerBarRenderer.playerBar.multiMarkersPlayerBarRenderer.markersMap[0].value.chapters` (`timeRangeStartMillis`, `title.simpleText`).
+3. Don't fetch the caption `baseUrl` (it returns an empty body). Instead, in the page click the description's expand button, then the "Show transcript" button, wait a few seconds, and read every `transcript-segment-view-model`: timestamp from `.ytwTranscriptSegmentViewModelTimestamp`, text from `span[role=text]`. Output `[m:ss] text` lines.
+4. Create a work dir (use the scratchpad) and write `meta.json` (same fields as meta.py: id, url, title, channel, duration, upload_date as YYYYMMDD, chapters as `{start: "mm:ss", title}`, description) and `transcript.txt` with the lines above. Write them with the Write tool, not shell heredocs (they broke on apostrophes).
+5. Continue at step 2 with that work dir. Tell the user in the final reply that the in-app browser fallback was used.
 
 ## 2. Read
 Read `meta.json` and the whole `transcript.txt`. Don't re-run anything to get metadata.
+
+## Build note
+On Windows `python3` may not exist: run `python -I $SKILL/scripts/build_page.py ...` instead. View the finished page from `~/yt-summaries`, not the draft `body.html` (which has no CSS).
 
 ## 3. Plan before writing
 1. Classify the video: tutorial/walkthrough, talk/explainer, interview/podcast, news/roundup, opinion/debate. This decides what sections emphasise (steps, arguments, Q&A themes, items, positions).
