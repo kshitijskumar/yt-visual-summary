@@ -1,6 +1,6 @@
 ---
 name: yt-visual-summary
-description: Turn a YouTube video into a single-file visual HTML summary (TL;DR, topic sections, bullets, diagrams, timestamp links). Use when given a YouTube link to summarise or digest.
+description: Turn a YouTube video into a single-file visual HTML summary (TL;DR, topic sections, bullets, diagrams, timestamp links). Use when given a YouTube link to summarise or digest. Can also publish the page as a claude.ai Artifact (when the user asks for an artifact, a shareable link, or access on other devices).
 ---
 
 # YouTube visual summary
@@ -66,4 +66,10 @@ Run `python3 $SKILL/scripts/build_page.py "$WORK/meta.json" "$WORK/body.html"`.
 - It writes `~/yt-summaries/<date>-<slug>.html`, prints the path, and opens it.
 - If it reports external resources, remove them from `body.html` and rerun.
 
-Before replying, spot-check three specific claims (a number, a name, a step) against `transcript.txt`. Reply with the file path and a one-line gist. Don't repeat the summary in chat.
+### Artifact mode (only when asked)
+If the user asks for an artifact, a link, or to view the summary on another device (phone, another computer), publish the built page after building it. Change nothing else: same body, same CSS, same build.
+- Publish the exact file `build_page.py` printed with the `Artifact` tool: `file_path` = that path, `icon: "video"`, `description` = the one-line gist. The page is already self-contained (inline CSS, no scripts, external links only to YouTube), so don't edit or re-style it. The artifact-design skill's contract is already met by `assets/style.css`.
+- For a later fix to the same summary, edit `body.html`, rebuild, and publish the same path again so the URL stays the same.
+- If the `Artifact` tool isn't available in this session, say so and give the local file path instead.
+
+Before replying, spot-check three specific claims (a number, a name, a step) against `transcript.txt`. Reply with the file path (and the artifact URL in artifact mode) and a one-line gist. Don't repeat the summary in chat.
